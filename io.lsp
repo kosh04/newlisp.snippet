@@ -5,7 +5,7 @@
 
 ;; call-with-{input,output}-file @scheme
 (define (with-file-handler filename proc (mode "r"))
-  (let ((fd (or (open filename mode)
+  (let ((fd (or (open (namestring filename) mode)
                 (throw-error (list filename (sys-error))))))
     (unwind-protect
         (proc fd)
@@ -14,8 +14,7 @@
 (define (with-output-file filename proc) (with-file-handler filename proc "w"))
 (define (with-input-file filename proc) (with-file-handler filename proc "r"))
 
-;; 出力を文字列に切り替えることも出来る
-;; (echo stdin "HELLO ") => "HELLO newLISP!\n"
+
 (define (echo in (out stdout))
   (cond ((socket? in)
          (let ((len (net-peek in)) buf)
@@ -23,16 +22,20 @@
              (net-receive in buf len)
              (write-line out buf))))
         ("else"
-         (while (read-line in)
-           (write-line out))))
+         (local (buf)
+           (while (read in buf 0x800)
+             (write out buf)))
+         ;; (while (read-line in) (write-line out))
+         ))
   (if (string? out) out))
+;; (echo stdin "HELLO ") => "HELLO newLISP!\n"
 
-;== (define cat read-file)
+;; == (define cat (lambda (file) (print (read-file file))))
 (define (cat filename)
   (with-input-file filename echo))
 
-;; ファイルと標準出力へ書き出し
 (define (tee filename buffer)
+  "Write BUFFER contents to standard-output and FILENAME."
   (append-file filename buffer)
   (print buffer))
 
