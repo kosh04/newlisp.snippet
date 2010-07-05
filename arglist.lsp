@@ -1,6 +1,6 @@
 ;; @module arglist.lsp
 ;; @description Find function argument list.
-;; @author KOBAYASHI Shigeru <shigeru.kb@gmail.com>
+;; @author KOBAYASHI Shigeru <shigeru.kb [at] gmail.com>
 ;; @version 0.1
 
 ;; ### Argument Format ###
@@ -14,6 +14,14 @@
 ;; - primitive, lambda, sym-function -> function
 ;; - test-function -> predicate
 ;; - exp -> obj, form
+
+;; ChangeLog:
+;;  v10.2.9 [+] net-ipv
+;;  v10.2.8 [+] net-packet,
+;;          [*] net-connect, get-url, post-url, put-url, delete-url
+;;              net-service
+;;  v10.2.1 [+] term, prefix, self, extend, read, write, ++, --
+;;          [-] name
 
 ;; TODO:
 ;; * FIXMEの見直し
@@ -34,9 +42,6 @@
               (lambda (x) (nth 3 (dump x)))))
          (get-string (cell->aux f)))))
 
-(define (function? x)
-  (or (lambda? f) (macro? f)))
-
 ;;;##interface
 (define-macro (arglist f)
   (let ((lst (arglist-1 (eval f))))
@@ -46,12 +51,13 @@
 ;(arglist cons) => (cons x y)
 ;(arglist-1 cons) => (x y)
 (define (arglist-1 f)
-  (cond ((function? f) (first f))
-        ((string? f) (Arglist f))
-        ((primitive? f) (Arglist (subr-name f)))
-        ((= f MAIN) nil)
-        ((context? f) (arglist (default f)))
-        ("else" (Arglist (string f)))))
+  (cond
+    ((primitive? f) (Arglist (subr-name f)))
+    ((string? f) (Arglist f))
+    ((or (lambda? f) (macro? f)) (first f))
+    ((= f MAIN) nil)
+    ((context? f) (arglist-1 (default f)))
+    ("else" (Arglist (string f)))))
 
 (defargs ! (command))
 (defargs + ([num ...]))
@@ -72,6 +78,9 @@
 (defargs ^ (int ...))
 (defargs ~ (int))
 (defargs : (function obj ...))
+(defargs $ (index))
+(defargs ++ (place [num]))
+(defargs -- (place [num]))
 (defargs abort ([pid]))
 (defargs abs (num))
 (defargs acos (num))
@@ -91,7 +100,7 @@
 (defargs asinh (z))
 (defargs assoc (key alist))
 (defargs atan (y))
-(defargs atan2 (y x))           ; (= (atan 1) (atan2 1 1))
+(defargs atan2 (y x))           ; (atan 1) == (atan2 1 1)
 (defargs atanh (z))
 (defargs atom? (obj))
 (defargs base64-dec (string))
@@ -110,9 +119,9 @@
 (defargs ceil (num))
 (defargs change-dir (directory))
 (defargs char (int-or-string [index]))
-(defargs chop (seq index))
+(defargs chop (seq (index 1)))
 (defargs clean (predicate list))
-(defargs close (int-file))
+(defargs close (device))
 (defargs command-event (function))
 (defargs cond (clauses ...))
 (defargs cons (x y))
@@ -136,8 +145,8 @@
 (defargs dec (place [num]))
 (defargs def-new (source [target]))
 (defargs default (context))
-(defargs define ((name [arguments]) body))
-(defargs define-macro ((name [arguments]) body))
+(defargs define ((name [args]) body))
+(defargs define-macro ((name [args]) body))
 (defargs delete (symbol-or-context [bool]))
 (defargs delete-file (pathname))
 (defargs delete-url (url [timeout]))
@@ -154,7 +163,7 @@
 (defargs dolist ((var list [test]) body))
 (defargs dostring ((var string [test]) body))
 (defargs dotimes ((var count [test]) body))
-(defargs dotree ((var context [bool]) body))
+(defargs dotree ((var context [hash-key-only?]) body))
 (defargs dump ([obj]))
 (defargs dup (obj [int] [bool]))
 (defargs empty? (seq))
@@ -169,11 +178,12 @@
 (defargs exists (predicate list))
 (defargs exit ([int-code]))
 (defargs exp (num))
-(defargs expand (form [list-assoc [bool]] | [symbols ...])) ; FIXME
+(defargs expand (form [[list-assoc [bool]] | [symbols ...]])) ; FIXME
 (defargs explode (seq [chunk] [bool]))
+(defargs extend (seq ...))                        ; add v.10.2.0
 (defargs factor (int))
 (defargs fft (nums))
-(defargs file-info (pathname [index] [bool]))
+(defargs file-info (pathname [index] [follow-link?]))
 (defargs file? (pathname))
 (defargs filter (predicate list))
 (defargs find (key seq [predicate-or-int]))
@@ -184,8 +194,8 @@
 (defargs float? (obj))
 (defargs floor (num))
 (defargs flt (num))
-(defargs "lambda" ((arguments) body))
-(defargs "fn" ((arguments) body)) ; fn == lambda
+(defargs "lambda" ((args) body))
+(defargs "fn" ((args) body))            ; fn == lambda
 (defargs for ((var from to [step] [test]) body))
 (defargs for-all (predicate list))
 (defargs fork (form))
@@ -243,17 +253,19 @@
 (defargs mod (num divisor ...))
 (defargs mul ([num ...]))
 (defargs multiply (matrix-A matrix-B))
-(defargs name (symbol-or-context [bool]))
+;; (defargs name (symbol-or-context [bool])) ; replace as `term/prefix'
 (defargs NaN? (num))
 (defargs net-accept (socket))
 (defargs net-close (socket [true]))
-(defargs net-connect (pathname-or-hostname port [mode] [ttl]))
+(defargs net-connect (pathname-or-hostname port [[mode] [ttl] | [timeout]]))
 (defargs net-error ([error-number]))
 (defargs net-eval (hostnames port form [timeout] [handler]))
 (defargs net-interface ([hostname]))
+(defargs net-ipv ([version]))
 (defargs net-listen (or (port [hostname] [mode]) (pathname)))
 (defargs net-local (socket))
 (defargs net-lookup (hostname [bool]))
+(defargs net-packet (new-packet str-packet))                 ; add v10.2.8
 (defargs net-peek (socket))
 (defargs net-peer (socket))
 (defargs net-ping (hosts [timeout] [count]))
@@ -264,13 +276,13 @@
 (defargs net-send (socket buffer [bytes]))
 (defargs net-send-to (host port buffer socket))
 (defargs net-send-udp (host port buffer [bool]))
-(defargs net-service (service protocol))
+(defargs net-service (service|port protocol))
 (defargs net-sessions ())
 (defargs new (source target [bool]))
 (defargs nil? (obj))
 (defargs normal (mean stdev [length]))
 (defargs not (form))
-(defargs now ([offset]))
+(defargs now ([offset] [index]))
 (defargs nper (interest pmt pv [fv type]))
 (defargs npv (interest values))
 (defargs nth (indices seq))
@@ -281,13 +293,14 @@
 (defargs pack (format [data-or-list ...]))
 (defargs parse (string [separator] [regex-option]))
 (defargs parse-date (string format))
-(defargs peek (int-file))
+(defargs peek (device))
 (defargs pipe ())
 (defargs pmt (interest periods principal [future-value type]))
 (defargs pop (seq [indices ...] [length]))
 (defargs pop-assoc (keys list-assoc))
 (defargs post-url (url contents [content-type] [option] [timeout] [header]))
 (defargs pow (base [num ...]))
+(defargs prefix (symbol))
 (defargs pretty-print ([length] [tab]))
 (defargs primitive? (obj))
 (defargs print ([args ...]))
@@ -305,13 +318,15 @@
 (defargs rand (range [length]))
 (defargs random (offset scale [length]))
 (defargs randomize (list [bool]))
-(defargs read-buffer (int-file buffer size [wait-string]))
-(defargs read-char (int-file))
+(defargs read (device buffer size [wait-string]))
+(defargs read-buffer (device buffer size [wait-string])) ; replace as `read'
+(defargs read-char (device))
 (defargs read-expr (source [context] [eval-if-error] [offset]))
 (defargs read-file (pathname))
 (defargs read-key ())
-(defargs read-line ([int-file]))
-(defargs read-utf8 (int-file))
+(defargs read-line ([device]))
+(defargs read-utf8 (device))
+(defargs reader-event ([function|nil]))
 (defargs real-path ([pathname]))
 (defargs receive (pid message))
 (defargs ref (key list [predicate]))
@@ -327,11 +342,12 @@
 (defargs rotate (seq [count]))
 (defargs round (num [digits]))
 (defargs save (pathname [symbol ...]))
-(defargs search (int-file pattern [no-dup?] [regex-option]))
+(defargs search (device pattern [no-dup?] [regex-option]))
 (defargs seed (int))
-(defargs seek (int-file [position]))
+(defargs seek (device [position]))
 (defargs select (seq [indices]))
 (defargs semaphore ([id] (or wait signal 0))) ; FIXME
+(defargs self (index))
 (defargs send (pid obj))
 (defargs sequence (start end [step]))
 (defargs series (start factor count))
@@ -366,6 +382,7 @@
 (defargs sys-info ([index]))
 (defargs tan (radians))
 (defargs tanh (radians))
+(defargs term (symbol))
 (defargs throw (form))
 (defargs throw-error (form))
 (defargs time (form [count]))
@@ -390,8 +407,9 @@
 (defargs wait-pid (pid (or option 0)))
 (defargs when (test body))
 (defargs while (test body))
-(defargs write-buffer (device buffer [size]))
-(defargs write-char (int-file char ...))
+(defargs write (device buffer [size]))
+(defargs write-buffer (device buffer [size])) ; replace as `write'
+(defargs write-char (device char ...))
 (defargs write-file (pathname buffer))
 (defargs write-line ([(device stdout)] [buffer]))
 (defargs xfer-event (function))
