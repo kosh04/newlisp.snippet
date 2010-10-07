@@ -2,50 +2,67 @@
 
 ;; newLISP の起動引数以外の引数を提供
 
+;;; ChangeLog:
+;;
+;; - 2010-01-21 初版作成
+;; - 2010-10-04
+;;   なるべくnewlisp起動時の流れに沿うように修正
+;;   (-startのような失敗する引数も許すようになった)
+;;   オプション-t,-6の追加
+
+;;; TODO
+;;
+;; - ファイル名の扱いはどうする？
+
 ;(context 'argv)
 
 (define invocation-name (first $main-args)) ; "newlisp" or "newlisp.exe"
 (define $argv (rest $main-args))
 
 (define (argv i)
-  (cond (i (when (< i (length $argv))
-             ($argv i)))
-        ("else" $argv)))
+  (cond (i (if (< i (length $argv)) ($argv i) nil))
+        (true $argv)))
 
-(define-macro (pop-args)
-  (let ((n (find (eval (args 0)) $argv
+;; @syntax: (pop-args str value?)
+(define (pop-args str (has-value nil))
+  (let ((n (find str $argv
                  (lambda (x y)
-                   (starts-with y x 0)))))
+                   (starts-with y x)))))
     (when n
       (cond
-        ((= $1 "")                      ; "--arg" "Value"
+        ((and has-value (= 2 (length (argv n)))) ; "-arg" "value"
+        (if (empty? ((+ n 1) $argv))
+         	(throw-error (string "missing parameter for " (argv n))))
          (pop $argv (+ n 1))
          (pop $argv n))
-        (true                           ; "--arg[Value]"
-         (pop $argv n)))
-      true)))
+        (true                                    ; "-arg[value]"
+         (pop $argv n))))
+    nil))
 
+;; "-n" option must be first.
+(if (= (argv 0) "-n")
+    (pop $argv))
 ;;
-(pop-args "-n")
 (pop-args "-h")
 (pop-args "-c")
 (pop-args "-C")
 (pop-args "-http")
-;;; FIXME: valid regex?
-(pop-args "-s(\\d*)")
-(pop-args "-m(\\d*)")
-(pop-args "-e(.*)")
-(pop-args "-l(.*)")
-(pop-args "-L(.*)")
-(pop-args "-p(\\d*)")
-(pop-args "-d(\\d*)")
-(pop-args "-w(.*)")
+(pop-args "-s" true)
+(pop-args "-m" true)
+(pop-args "-e" true)
+(pop-args "-l" true)
+(pop-args "-L" true)
+(pop-args "-p" true)
+(pop-args "-d" true)
+(pop-args "-t" true)
+(pop-args "-w" true)
+(pop-args "-6")
 
 
 (define (getopt optstring (has-value nil))
   "オプション引数の解析."
   (let ((pos (find optstring $main-args
-                   (lambda (x y) (starts-with y x)))))
+                   (lambda (x y) (starts-with y x 0)))))
     (if (and pos has-value)
         (if (!= (main-args pos) optstring)
             (slice (main-args pos) (length optstring))
@@ -61,5 +78,4 @@
 
 
 (context MAIN)
-
 ;;; EOF

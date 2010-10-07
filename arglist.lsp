@@ -1,6 +1,6 @@
 ;; @module arglist.lsp
 ;; @description Find function argument list.
-;; @author KOBAYASHI Shigeru <shigeru.kb [at] gmail.com>
+;; @author KOBAYASHI Shigeru <shigeru.kb[at]gmail.com>
 ;; @version 0.1
 
 ;; ### Argument Format ###
@@ -60,11 +60,14 @@
     ("else" (Arglist (string f)))))
 
 (defargs ! (command))
+(defargs $ (index))
 (defargs + ([num ...]))
 (defargs - (num ...))
 (defargs * ([num ...]))
 (defargs / (num ...))
 (defargs % (num ...))
+(defargs ++ (place [num]))
+(defargs -- (place [num]))
 (defargs < (obj ...))
 (defargs > (obj ...))
 (defargs = (obj ...))
@@ -78,9 +81,6 @@
 (defargs ^ (int ...))
 (defargs ~ (int))
 (defargs : (function obj ...))
-(defargs $ (index))
-(defargs ++ (place [num]))
-(defargs -- (place [num]))
 (defargs abort ([pid]))
 (defargs abs (num))
 (defargs acos (num))
@@ -239,7 +239,7 @@
 (defargs load (pathname ... [context]))
 (defargs local ((symbol ...) body))
 (defargs log (num [base]))
-(defargs lookup (key list-assoc [index] [default]))
+(defargs lookup (key list-assoc [(index -1)] [default]))
 (defargs lower-case (string))
 (defargs macro? (obj))
 (defargs main-args ([index]))
@@ -264,11 +264,11 @@
 (defargs net-ipv ([version]))
 (defargs net-listen (or (port [hostname] [mode]) (pathname)))
 (defargs net-local (socket))
-(defargs net-lookup (hostname [bool]))
-(defargs net-packet (new-packet str-packet))                 ; add v10.2.8
+(defargs net-lookup (hostname [force-host-by-name]))
+(defargs net-packet (str-packet))       ; add v10.2.8
 (defargs net-peek (socket))
 (defargs net-peer (socket))
-(defargs net-ping (hosts [timeout] [count]))
+(defargs net-ping (hosts [(timeout 1000)] [count]))
 (defargs net-receive (socket buffer max-bytes [wait-string]))
 (defargs net-receive-from (socket max-size))
 (defargs net-receive-udp (port max-size [microsec] [addr-if]))
@@ -378,7 +378,7 @@
 (defargs sym (string|num|symbol [context] [nil]))
 (defargs symbol? (obj))
 (defargs symbols ([context]))
-(defargs sys-error ([(or error-number 0)]))
+(defargs sys-error ([(error-number 0)]))
 (defargs sys-info ([index]))
 (defargs tan (radians))
 (defargs tanh (radians))
