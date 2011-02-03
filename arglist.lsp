@@ -7,10 +7,10 @@
 ;;
 ;; - [] (&optional)
 ;; - ... (&rest, args)
-;;
 ;; - string, list, (array) -> seq, sequence
 ;; - int-file, str-device -> device
-;; - int, float -> num (integer-only -> int)
+;; - int, float -> num
+;; - integer-only -> int
 ;; - primitive, lambda, sym-function -> function
 ;; - test-function -> predicate
 ;; - exp -> obj, form
@@ -18,8 +18,7 @@
 ;; ChangeLog:
 ;;  v10.2.9 [+] net-ipv
 ;;  v10.2.8 [+] net-packet,
-;;          [*] net-connect, get-url, post-url, put-url, delete-url
-;;              net-service
+;;          [*] net-connect, get-url, post-url, put-url, delete-url, net-service
 ;;  v10.2.1 [+] term, prefix, self, extend, read, write, ++, --
 ;;          [-] name
 
@@ -27,13 +26,11 @@
 ;; * FIXMEの見直し
 ;; * http://www.newlisp.org/downloads/newlisp_manual.html#type_ids
 ;; -> array,body,bool,context,exp,func,int,list,num,matrix,place,str,sym,sym-context
+;; * Win32システムで利用できない関数の扱い
 
 ;;; Code:
 
 (new Tree 'Arglist)             ; make hash-table
-
-(define-macro (defargs fname lambda-list)
-  (Arglist (string fname) lambda-list))
 
 (define (subr-name f)
   (and (primitive? f)
@@ -41,12 +38,6 @@
               ;; see newlisp.c:printCell
               (lambda (x) (nth 3 (dump x)))))
          (get-string (cell->aux f)))))
-
-;;;##interface
-(define-macro (arglist f)
-  (let ((lst (arglist-1 (eval f))))
-    (when lst
-      (cons (sym f) lst))))
 
 ;(arglist cons) => (cons x y)
 ;(arglist-1 cons) => (x y)
@@ -58,6 +49,15 @@
     ((= f MAIN) nil)
     ((context? f) (arglist-1 (default f)))
     ("else" (Arglist (string f)))))
+
+;;;##interface
+(define-macro (arglist f)
+  (let ((lst (arglist-1 (or (eval f) f))))
+    (when lst
+      (cons (sym f) lst))))
+
+(define-macro (defargs fname lambda-list)
+  (Arglist (string fname) lambda-list))
 
 (defargs ! (command))
 (defargs $ (index))

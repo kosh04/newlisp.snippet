@@ -2,11 +2,18 @@
 
 ;; http://en.wikipedia.org/wiki/Standard_streams
 (setq stdin 0 stdout 1 stderr 2)
+#include <stdio.h>
+(define	STDIN_FILENO	0)
+(define	STDOUT_FILENO	1)
+(define	STDERR_FILENO	2)
+
+(define (open! )
+  (or (apply open (args))
+      (throw-error (list (args) (sys-error)))))
 
 ;; call-with-{input,output}-file @scheme
 (define (with-file-handler filename proc (mode "r"))
-  (let ((fd (or (open (namestring filename) mode)
-                (throw-error (list filename (sys-error))))))
+  (let ((fd (open! (namestring filename) mode)))
     (unwind-protect
         (proc fd)
       (close fd))))
@@ -14,21 +21,25 @@
 (define (with-output-file filename proc) (with-file-handler filename proc "w"))
 (define (with-input-file filename proc) (with-file-handler filename proc "r"))
 
-
-(define (echo in (out stdout))
-  (cond ((socket? in)
-         (let ((len (net-peek in)) buf)
-           (when (!= len 0)
-             (net-receive in buf len)
-             (write-line out buf))))
-        ("else"
-         (local (buf)
-           (while (read in buf 0x800)
-             (write out buf)))
-         ;; (while (read-line in) (write-line out))
-         ))
-  (if (string? out) out))
-;; (echo stdin "HELLO ") => "HELLO newLISP!\n"
+(define (echo (in stdin) (out stdout))
+  (let ((buf "")
+        (len 0))
+    (cond
+      ;; socket?
+      ((and (integer? in) (net-local in))
+       (setq len (net-peek in))
+       (when (!= len 0)
+         (net-receive in buf len)
+         (write-line out buf)))
+      (true
+       ;; (while (read-line in) (write-line out))
+       (while (read in buf 0x1000)      ; or (peek in)
+         (write out buf)
+         (++ len (length buf)))))
+    (if (string? out)
+        out
+        len)))
+;; (echo stdin "") => [make strings from input]
 
 ;; == (define cat (lambda (file) (print (read-file file))))
 (define (cat filename)

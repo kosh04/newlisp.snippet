@@ -7,8 +7,10 @@
 ;; - 2010-01-21 初版作成
 ;; - 2010-10-04
 ;;   なるべくnewlisp起動時の流れに沿うように修正
-;;   (-startのような失敗する引数も許すようになった)
+;;   ("-start" のような失敗する引数も許すようになった)
 ;;   オプション-t,-6の追加
+;; - 2011-01-29
+;;   オプション-vの追加
 
 ;;; TODO
 ;;
@@ -19,11 +21,12 @@
 (define invocation-name (first $main-args)) ; "newlisp" or "newlisp.exe"
 (define $argv (rest $main-args))
 
+;; @syntax (argv index)
 (define (argv i)
   (cond (i (if (< i (length $argv)) ($argv i) nil))
         (true $argv)))
 
-;; @syntax: (pop-args str value?)
+;; @syntax (pop-args str value?)
 (define (pop-args str (has-value nil))
   (let ((n (find str $argv
                  (lambda (x y)
@@ -31,11 +34,11 @@
     (when n
       (cond
         ((and has-value (= 2 (length (argv n)))) ; "-arg" "value"
-        (if (empty? ((+ n 1) $argv))
-         	(throw-error (string "missing parameter for " (argv n))))
-         (pop $argv (+ n 1))
+         (if (empty? ((+ n 1) $argv))
+             (write 2 (string "missing parameter for " (argv n) "\n")) ; XXX
+             (pop $argv (+ n 1)))         
          (pop $argv n))
-        (true                                    ; "-arg[value]"
+        (true                           ; "-arg[value]"
          (pop $argv n))))
     nil))
 
@@ -55,6 +58,7 @@
 (pop-args "-p" true)
 (pop-args "-d" true)
 (pop-args "-t" true)
+(pop-args "-v")
 (pop-args "-w" true)
 (pop-args "-6")
 

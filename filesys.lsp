@@ -1,4 +1,4 @@
-;; files.lsp --- Fileystem Utilities
+;; filesys.lsp --- Fileystem Utilities
 
 ;; NOTE: Linuxでは存在しないファイルにrealpathを使えない
 (define (merge-pathnames pathname (defaults "."))
@@ -24,11 +24,46 @@
   (or (probe-file pathname)
       (error "%s: No such file or directory" pathname)))
 
+;; FIXME: "/"
+;; (define (basename path (sfx ""))
+;;   (if (= (path -1) "/")
+;;       (setq path (chop path)))
+;;   (catch
+;;       (for (idx 1 (length path))
+;;         (when (= (path (- idx)) "/")
+;;           (setq path ((- 1 idx) path))
+;;           (throw 'found))))
+;;   (if (ends-with path sfx)
+;;       (setq path (chop path (length sfx))))
+;;   path)
+
 (define (basename path (sfx ""))
-  (if (= path "")
-      path
-    (string-right-trim sfx
-      (last (parse path "[\\/]" 0)))))
+  (if (= (path -1) "/")
+      (setq path (chop path)))
+  (setq path (last (or (parse path "[\\/]" 0) '("/"))))
+  (if (ends-with path sfx)
+      (setq path (chop path (length sfx))))
+  path)
+
+;; "/usr/lib"   => "/usr"
+;; "/usr/"      => "/"
+;; "usr"        => "."
+;; "/"          => "/"
+;; "."          => "."
+;; ".."         => "."
+(define (dirname path)
+  (if (and (find (path -1) "/\\")
+           (!= "/" path))
+      (setq path (chop path)))
+  (catch
+      (begin
+        (for (idx 1 (length path))
+          (when (find (path (- idx)) "/\\")
+            (setq path (chop path idx))
+            (throw 'found)))
+        (setq path ".")))
+  (cond ((empty? path) "/")
+        (true          path)))
 
 (define (file-length pathname)
   "Retun PATHNAMEs file size as byte."
@@ -65,6 +100,7 @@
 
 ;; FIXME: s/mktemp/mkstemp
 (define mktemp make-temp-file-name)
+
 
 (context MAIN)
 ;;; EOF

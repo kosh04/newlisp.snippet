@@ -18,18 +18,17 @@
 ;;   (replace "[^-A-Za-z0-9$_.+!*'(|),]" url (format "%%%02X" (char $it)) 0))
 
 ;; URL translation of hex codes with dynamic replacement
-(define (url-encode url (literal "-A-Za-z0-9$_.+!*'(|),"))
-  (setq literal (append "[" literal "]"))
+(define (url-encode url (literal ""))
   (join (map (lambda (c)
-               (if (regex literal (char c))
+               (if (or (regex "[-A-Za-z0-9$_.+!*'(|),]" (char c))
+                       (member (char c) literal))
                    (char c)
                  (format "%%%02X" c)))
-             ;; 8-bit clean でエンコードした方が衛生的
+             ;; 8-bit clean
              (unpack (dup "b" (length url)) url))))
 
-(define (url-decode url)
-  ;; (PCRE_CASELESS 1)
-  ;; (replace "+" url " ") ; optional
+(define (url-decode url (opt nil))
+  (if opt (replace "+" url " "))
   (replace "%([[:xdigit:]]{2})" url (pack "b" (int $1 0 16)) 0))
 
 ;; FIXME: (sys-error) が更新されるのはまずいかもしれない
@@ -40,42 +39,42 @@
 
 (define (net-wait socket (mode "read") (ms 1000))
   (until (net-select socket mode ms)
-    (if (net-error) (println (net-error)))))
-
-(define (curl url) (print (get-url url)) true)
-(define (curl--head url) (print (get-url url "header")) true)
-(define curl-I curl--head)
-;; (curl--head "http://www.newlisp.org/")
-
-;; (define (wget url (outfile (basename url))) (write-file outfile (get-url url)))
-;; (wget "http://www.newlisp.org/index.cgi")
-
-(define nslookup net-lookup)
+    (if (net-error)
+        (println (net-error))))
+  nil)
 
 ;; IPアドレスと数値の変換 (IPv4)
 ;; see also - http://www.nuevatec.com/ip-to-country.html
 
-;; @syntax: (ip->number str-ipaddr|list-ipaddr)
-;; @example: (ip->number "192.168.0.1") => 3232235521
-;; @example: (ip->number '(127 0 0 1))  => 2130706433
-(define (ip->number ip)
+;; @example (inet_aton "192.168.0.1") => "\192\168\000\001"
+(define (inet_aton ip)
   (if (string? ip)
       ;; "127.0.0.1" -> (127 0 0 1)
       (setq ip (map (lambda (n)
                       (int n nil 10))
                     (parse ip "."))))
-  (first (unpack ">lu" (pack "bbbb" ip))))
+  (pack "bbbb" ip))
 
-;; @syntax: (number->ip int-ipaddr [return-list?])
-;; @example: (number->ip 4294967040) => "255.255.255.0"
-;; @example: (number->ip 4294967040 true) => (255 255 255 0)
+;; @example (inet_ntoa "\192\168\000\001")  => "192.168.0.1"
+(define (inet_ntoa byte-ipaddr)
+  (format "%d.%d.%d.%d" (unpack "bbbb" byte-ipaddr)))
+
+;; @syntax (ip->number str-ipaddr|list-ipaddr)
+;; @example (ip->number "192.168.0.1") => 3232235521
+;; @example (ip->number '(127 0 0 1))  => 2130706433
+(define (ip->number ip)
+  (first (unpack ">lu" (inet_aton ip))))
+
+;; @syntax (number->ip int-ipaddr [return-list?])
+;; @example (number->ip 4294967040)      => "255.255.255.0"
+;; @example (number->ip 4294967040 true) => (255 255 255 0)
 (define (number->ip num (lst? nil))
   (unless (number? num)
-    (throw-error "number expected"))
-  (let ((ip (unpack "bbbb" (pack ">lu" num))))
+    (throw-error "value expected"))
+  (let ((ip (inet_ntoa (pack ">lu" num))))
     (if lst?
-        ip
-      (join (map string ip) "."))))
+        (map int (parse ip "."))
+        ip)))
 
 (context MAIN)
 ;;; EOF
