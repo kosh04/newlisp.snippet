@@ -1,4 +1,4 @@
-;; unicode.lsp
+;;; unicode.lsp
 
 (define (utf8?)
   "Non-nil means newLISP is UTF-8 eoncoding are supported."

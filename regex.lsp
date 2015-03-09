@@ -36,5 +36,20 @@
   PRECOMPILED    0x10000
  )
 
+;; 正規表現のオプション(//six)を数値に変換するヘルパー関数
+;; v.10.6.2 より直接指定が利用可能
+(define (re kwd)
+  (letn ((opt 0)
+         (|| (lambda (i) (setq opt (| opt i)))))
+    (dostring (c kwd)
+      (case (char c)
+        ("i" (|| 1))        ; PCRE_CASELESS
+        ("m" (|| 2))        ; PCRE_MULTILINE
+        ("s" (|| 4))        ; PCRE_DOTALL
+        ("x" (|| 8))        ; PCRE_EXTENDED
+        (true (throw-error "unknown keyword"))))
+    opt))
+
+
 (context MAIN)
 ;;; EOF
