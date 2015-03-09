@@ -27,3 +27,6 @@ LISP 風スクリプト言語 `newLISP' のための小物モジュールです�
 - [lambda.lsp](https://gist.github.com/262332) - なんちゃってラムダ計算
 - [mandelbrot.lsp](https://gist.github.com/260340) - Mandelbrot Set ASCII art for newLISP
 - [256colors.lsp](https://gist.github.com/255040) - xterm's color test
+- [win32-ping.lsp](https://gist.github.com/kosh04/5169029)
+- [flippy.lsp](https://gist.github.com/kosh04/4703326)
+- [mlang.lsp](https://gist.github.com/kosh04/2410965) - Win32 codepage comverter
