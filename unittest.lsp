@@ -23,6 +23,10 @@
          (list (term x) (eval x)))
        (args)))
 
+(define (identity obj)
+  "Returns its argument."
+  obj)
+
 (define (Test:add name form (value nil) (pass nil))
    (TestPool name (mkassoc name form value pass)))
 
@@ -68,8 +72,10 @@
                     'values)
             pass (and (true? noerr)
                       (list? values)    ; not "ERR:"
-                      (apply and values)))
-      (Test:add name form values pass))))
+                      (for-all identity values)))
+      (Test:add name form values pass)
+      ;;(Test:log "%s" (string (TestPool name)))
+      )))
 
 (define (run)
   (dotree (t TestPool true)
