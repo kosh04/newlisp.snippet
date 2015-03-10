@@ -43,7 +43,7 @@
        (names)))
 
 (define (pass-all?)
-  (find-all true? (passes)))
+  (for-all true? (passes)))
 
 (define (pass-count)
   (length (filter true? (passes))))
