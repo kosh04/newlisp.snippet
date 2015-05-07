@@ -31,6 +31,14 @@
   (if opt (replace "+" url " "))
   (replace "%([[:xdigit:]]{2})" url (pack "b" (int $1 0 16)) 0))
 
+(define (query-string str)
+  "Translate query_string STR to list."
+  (map (lambda (item)
+         (let ((kv (parse item "=")))
+           (list (first kv)
+                 (url-decode (last kv) true))))
+       (parse str "&")))
+
 ;; FIXME: (sys-error) が更新されるのはまずいかもしれない
 (define (socket? x)
   (if (or (net-local x)

@@ -14,3 +14,10 @@
     (2 (sequence (args 0) (args 1)))
     (3 (sequence (args 0) (args 1) (args 2)))
     (true '())))
+
+; (define (union list1 list2)
+;   (let (acc)
+;     (dolist (l list1)
+;       (if (not (member l list2))
+;           (push l acc -1)))
+;     (append acc list2)))

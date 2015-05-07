@@ -14,7 +14,7 @@
   (MLangTest:lossless= "\u3053\u3093\u306b\u3061\u306f" "euc-jp")
   (MLangTest:lossless= "\u3053\u3093\u306b\u3061\u306f" "utf-8")
   (MLangTest:lossless= "私はガラスを食べられます。それは私を傷つけません。" "sjis")
-  true)
+  (MLangTest:lossless= "私はガラスを食べられます。それは私を傷つけません。" "euc-jp")
+  (MLangTest:lossless= "私はガラスを食べられます。それは私を傷つけません。" "utf-8"))
 
 (Test:run)
-
