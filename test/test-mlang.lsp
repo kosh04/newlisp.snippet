@@ -1,4 +1,4 @@
-;;; test-builtin.lsp
+;;; test-mlang.lsp -*- coding: utf-8 -*-
 
 (load "mlang.lsp")
 (load "unittest.lsp")
