@@ -1,0 +1,7 @@
+language: newlisp
+before_install:
+  - curl -Os http://www.newlisp.org/downloads/newlisp_10.6.2-utf8_amd64.deb
+  - sudo dpkg -i newlisp_10.6.2-utf8_amd64.deb
+  - newlisp -v
+script:
+  - make test-all
