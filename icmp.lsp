@@ -1,18 +1,15 @@
-;;; icmp.lsp
-
 ;; @module icmp.lsp
 ;; @description Enable win32 ICMP echo request (IPv4 only)
 ;; @version 0.2
 ;; @lisence MIT
 
-;;; Link:
-
-;; INFO: Implementing Incternet Pings Using Icmp.dll
-;; - https://support.microsoft.com/ja-jp/kb/170591
-;; Microsoft's ICMP API
-;; - http://www.sockets.com/ms_icmp.htm
-;; Winsock Programmer's FAQ: Ping: ICMP.DLL Method
-;; - http://www.kt.rim.or.jp/~ksk/wskfaq-ja/examples/dllping.html
+;; @link
+;; - INFO: Implementing Incternet Pings Using Icmp.dll
+;;   https://support.microsoft.com/ja-jp/kb/170591
+;; - Microsoft's ICMP API
+;;   http://www.sockets.com/ms_icmp.htm
+;; - Winsock Programmer's FAQ: Ping: ICMP.DLL Method
+;;   http://www.kt.rim.or.jp/~ksk/wskfaq-ja/examples/dllping.html
 
 ;;; Code:
 
