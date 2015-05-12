@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/kosh04/newlisp.snippet.svg?branch=master)](https://travis-ci.org/kosh04/newlisp.snippet)
+
 ## About
 
 LISP 風スクリプト言語 `newLISP' のための小物モジュールです。
