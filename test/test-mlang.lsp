@@ -1,5 +1,9 @@
 ;;; test-mlang.lsp -*- coding: utf-8 -*-
 
+(unless (member ostype '("Win32" "Windows" "Cygwin"))
+  (println "Nothing to do on unix platform")
+  (exit))
+
 (load "mlang.lsp")
 (load "unittest.lsp")
 
