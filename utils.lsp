@@ -20,3 +20,11 @@
                ((list? x)
                 (list (string (first x)) (eval (last x))))))
        (args)))
+
+;; @example
+;;  (assert (= 0 (fib 0)))
+;;  (assert (= 1 (fib 1)))
+;;  (assert (= 55 (fib 10)))
+(define-macro (assert)
+  (or (not (nil? (eval (args 0))))
+      (throw-error (list "assert fail" (args 0)))))

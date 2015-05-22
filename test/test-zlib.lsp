@@ -1,21 +1,21 @@
 ;; test-zlib.lsp
 
 (load "zlib.lsp")
+(load "unittest.lsp")
 
-;(define (printf) (print (apply format (args))))
+(case ostype
+  ("Win32"
+   (import "msvcrt" "printf"))
+  ("Cygwin"
+   (import "cygwin1" "printf"))
+  ("Linux"
+   (import "libc" "printf")))
 
-(import "msvcrt" "printf")
-(import "msvcrt" "strlen")
-;(import "cygwin1" "printf")
-;(import "cygwin1" "strlen")
-
-(setf a "Hello Hello Hello Hello Hello Hello!" ;(dup "\000" 50)
+(define-test "simple"
+(local (a b c z zin)
+(setf a "Hello Hello Hello Hello Hello Hello!"
       b (dup "\000" 50)
       c (dup "\000" 50))
-
-
-(let ((str "Hello Hello Hello Hello Hello Hello!"))
-  (cpymem str a (length str)))
 
 (printf "Uncompressed size is: %lu\n" (length a))
 (printf "Uncompressed data is: '%.*s'\n" (length a) a)
@@ -31,15 +31,14 @@
 (:slot z "next_out" (address b))
 
 (printf "deflate: %d,%d,%d\n"
- (zlib:deflateInit_ (z 1) zlib:Z_DEFAULT_COMPRESSION (zlib:version) (length (z 1)))
+ (zlib:deflateInit (z 1) zlib:Z_DEFAULT_COMPRESSION)
  (zlib:deflate (z 1) zlib:Z_FINISH)
  (zlib:deflateEnd (z 1))
  )
 
-(:pp z)
+;;(:pp z)
 (printf "Compressed size is: %lu\n" (:slot z "total_out"))
 (printf "Compressed data is: '%.*s'\n" (:slot z "total_out") b)
-;;(slice b 0 (strlen b))
 
 ;; inflate b into c
 (setf zin (z_stream))
@@ -57,8 +56,18 @@
  (zlib:inflateEnd (zin 1))
  )
 
-(:pp zin)
 (printf "Uncompressed size is: %lu\n" (:slot zin "total_out"))
 (printf "Uncompressed data is: '%.*s'\n" (:slot zin "total_out") c)
+))
 
-(exit)
+;; disable test
+;(TestPool "simple" nil)
+
+(setf _data "Hello Hello Hello Hello Hello Hello!")
+;(setf _data (read-file "zlib.lsp"))
+
+(define-test "deflate-and-inflate"
+  (println (list (zlib:def _data)))
+  (println (list (zlib:inf (zlib:def _data))))
+  (println (= _data (zlib:inf (zlib:def _data))))
+  )
