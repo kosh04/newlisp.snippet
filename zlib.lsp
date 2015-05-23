@@ -3,6 +3,7 @@
 
 ;; @link
 ;; - http://www.zlib.net/manual.html
+;; - http://www.zlib.net/zpipe.c
 
 (load "utils.lsp")
 
@@ -109,6 +110,7 @@
         "char*"                 ; const char *version
         "int"                   ; int stream_size
 )
+;; XXX: var `strm' should not copy (by lambda) for rewrite myself
 (define-macro (deflateInit )
   (deflateInit_ (eval (args 0))
                 (eval (args 1))
@@ -123,8 +125,10 @@
         "char*"                 ; const char *version
         "int"                   ; int stream_size
 )
-(define (inflateInit strm)
-  (inflateInit_ strm ZLIB_VERSION (length strm)))
+(define-macro (inflateInit )
+  (inflateInit_ (eval (args 0))
+                ZLIB_VERSION
+                (length (eval (args 0)))))
 
 (import _libz "inflate" "int" "void*" "int")
 (import _libz "inflateEnd" "int" "void*")
@@ -188,9 +192,7 @@
       (:slot z "avail_out" (length dst-tmp))
       (:slot z "next_out" (address dst-tmp))
       (setq ret (inflate (z 1) Z_NO_FLUSH))
-      (println ",,,inflate=" ret)
       (MAIN:assert (not (member ret (list Z_NEED_DICT Z_DATA_ERROR Z_MEM_ERROR))))
-      ;;(:pp z)
       (extend dst (slice dst-tmp 0 (- (length dst-tmp) (:slot z "avail_out"))))
       )
     (MAIN:assert (= ret Z_STREAM_END))
