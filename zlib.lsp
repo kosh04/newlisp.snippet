@@ -11,23 +11,25 @@
 
 (context 'zlib)
 
-(case ostype
-  ("Windows"
-   ;;(define _libz "zlib1.dll")
-   (define _libz "libz-1.dll"))
-  ("Win32"
-   (define _libz "libz-1"))
-  ("Cygwin"
-   (define _libz "cygz.dll"))
-  ("Linux"
-   (define _libz "libz.so"))
-  ("OSX"
-   (define _libz "libz.dylib"))
-  )
+(define _libz
+  (case ostype
+    ("Win32"   "libz-1.dll")
+    ("Windows" "libz-1.dll")
+    ("Cygwin"  "cygz.dll")
+    ("Linux"   "libz.so")
+    ("OSX"     "libz.dylib")
+    (true      "libz.so")))
 
 ;; Utils
 
 (define (second x) (x 1))
+
+(define _debug_ true)
+
+(define assert
+  (if _debug_
+      MAIN:assert
+      (lambda-macro ())))
 
 ;; Version
 
@@ -156,23 +158,29 @@
 
 (define (def src (level Z_DEFAULT_COMPRESSION))
   (let ((z (z_stream))
-        (dst (dup "\000" (length src)))
+        (dst-tmp (dup "\000" CHUNK))
+        (dst "")
         (ret -1))
     (:slot z "zalloc" 0)
     (:slot z "zfree" 0)
     (:slot z "opaque" 0)
     (setf ret (deflateInit (z 1) level))
-    (MAIN:assert (= ret Z_OK))
-    (:slot z "avail_in" (length src))
-    (:slot z "next_in" (address src))
-    (:slot z "avail_out" (length dst))
-    (:slot z "next_out" (address dst))
-    (setf ret (deflate (z 1) Z_FINISH))
-    (MAIN:assert (= ret Z_STREAM_END))
-    (MAIN:assert (= 0 (:slot z "avail_in")))
+    (assert (= ret Z_OK))
+    (do-while (!= ret Z_STREAM_END)      ; (!= flush Z_FINISH) ?
+      (:slot z "avail_in" (length src))
+      (:slot z "next_in" (address src))
+      (do-while (= (:slot z "avail_out") 0)
+        (:slot z "avail_out" (length dst-tmp))
+        (:slot z "next_out" (address dst-tmp))
+        (setf ret (deflate (z 1) Z_FINISH))
+        (assert (!= ret Z_STREAM_ERROR))
+        (extend dst (slice dst-tmp 0
+                           (- (length dst-tmp)
+                              (:slot z "avail_out")))))
+      (assert (= (:slot z "avail_in") 0)))
+    (assert (= ret Z_STREAM_END))
     (deflateEnd (z 1))
-    (slice dst 0 (:slot z "total_out"))
-    ))
+    dst))
 
 (define (inf src)
   (letn ((z (z_stream))
@@ -184,31 +192,37 @@
     (:slot z "opaque" Z_NULL)
     (:slot z "avail_in" 0)
     (:slot z "next_in" Z_NULL)
-    (setq ret (inflateInit (z 1)))
-    (MAIN:assert (= ret Z_OK))
-    (:slot z "avail_in" (length src))
-    (:slot z "next_in" (address src))
-    (do-while (= (:slot z "avail_out") 0)
-      (:slot z "avail_out" (length dst-tmp))
-      (:slot z "next_out" (address dst-tmp))
-      (setq ret (inflate (z 1) Z_NO_FLUSH))
-      (MAIN:assert (not (member ret (list Z_NEED_DICT Z_DATA_ERROR Z_MEM_ERROR))))
-      (extend dst (slice dst-tmp 0 (- (length dst-tmp) (:slot z "avail_out"))))
-      )
-    (MAIN:assert (= ret Z_STREAM_END))
-    (inflateEnd (z 1))
+    (:inflate-init z)
+    (assert (= (:retval z) Z_OK))
+    (when (!= (length src) 0)
+      (:slot z "avail_in" (length src))
+      (:slot z "next_in" (address src))
+      (do-while (= (:slot z "avail_out") 0)
+        (:slot z "avail_out" (length dst-tmp))
+        (:slot z "next_out" (address dst-tmp))
+        (:inflate z Z_NO_FLUSH)
+        ;;(:pp z)
+        (assert (or (!= (:retval z) Z_NEED_DICT)
+                    (!= (:retval z) Z_DATA_ERROR)
+                    (!= (:retval z) Z_MEM_ERROR)))
+        (extend dst (slice dst-tmp 0
+                           (- (length dst-tmp) (:slot z "avail_out"))))))
+    (:inflate-end z)
+    (unless (= (:retval z) Z_STREAM_END)
+      (throw-error "invalid or incomplete deflate data"))
     dst))
 
 ;; constructor
 
 (define (z_stream:z_stream)
-  (cons (context) (pack _z_stream)))
+  (list (context) (pack _z_stream) Z_ERRNO))
 
-(define (z_stream:_unpack)
+(define (z_stream:unpack)
   (unpack _z_stream (self 1)))
 
+
 (define (z_stream:slot key (value nil))
-  (let ((z (:_unpack (self)))
+  (let ((z (:unpack (self)))
         (i (or (find key (map first _z_stream_members))
                (throw-error (list "unknown slot key" key)))))
     (when value
@@ -216,12 +230,30 @@
       (setf (self 1) (pack _z_stream z)))
     (z i)))
 
+(define (z_stream:retval (value nil))
+  (when value
+    (setf (self 2) value))
+  (self 2))
+
+;; @example (:inflate-init z)
+(define (z_stream:inflate-init)
+  (:retval (self) (inflateInit (self 1))))
+
+;; @example (:inflate z Z_NO_FLUSH)
+(define (z_stream:inflate flush)
+  (:retval (self) (inflate (self 1) flush)))
+
+;; @example (:inflate-end z)
+(define (z_stream:inflate-end)
+  ;; ignore return value
+  (inflateEnd (self 1)))
+
 (define (z_stream:pp)
   (println (string
             (map (lambda (type val)
                    (list (type 0) (type 1) val))
                  _z_stream_members
-                 (:_unpack (self))))))
+                 (:unpack (self))))))
 
 (context MAIN)
 

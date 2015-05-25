@@ -10,10 +10,18 @@
           (env "COMSPEC")
           (env "SHELL")))
 
+(define-macro (error? expr)
+  (local (value)
+    (nil? (catch (eval expr) 'value))))
+
 (define (lossless= data)
   (= data (zlib:inf (zlib:def data))))
 
-(define-test "simple"
+(define-test "lossless"
+  (lossless= "")
   (lossless= _data_text)
   (lossless= (read-file _data_file))
   (lossless= (read-file _data_binary)))
+
+(define-test "inflate-error"
+  (error? (zlib:inf "")))
