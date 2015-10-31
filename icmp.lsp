@@ -11,6 +11,10 @@
 ;; - Winsock Programmer's FAQ: Ping: ICMP.DLL Method
 ;;   http://www.kt.rim.or.jp/~ksk/wskfaq-ja/examples/dllping.html
 
+;;; NOTE:
+
+;; Win64 version does not work yet.
+
 ;;; Code:
 
 (context 'Icmp)

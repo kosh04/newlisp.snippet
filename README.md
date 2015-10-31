@@ -5,6 +5,7 @@
 LISP 風スクリプト言語 `newLISP' のための小物モジュールです。
 個人用に書いたものばかりなので、あまり整理されていません。
 
+共有ライブラリを利用しているものは64ビット版では動かないかも (zlib.lsp など)
 
 ## その他
 
@@ -32,3 +33,4 @@ LISP 風スクリプト言語 `newLISP' のための小物モジュールです�
 - [win32-ping.lsp](https://gist.github.com/kosh04/5169029)
 - [flippy.lsp](https://gist.github.com/kosh04/4703326)
 - [mlang.lsp](https://gist.github.com/kosh04/2410965) - Win32 codepage comverter
+- [dotassoc.lsp](https://gist.github.com/kosh04/b0669f75152d082d02a4)

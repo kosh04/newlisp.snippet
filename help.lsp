@@ -1,3 +1,5 @@
+;;; help.lsp
+
 (define (apropos str (do-print true))
   "Return symbols that matches the regexp."
   (let ((acc (find-all str (symbols) $it

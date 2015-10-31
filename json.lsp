@@ -1,4 +1,4 @@
-;; json.lps
+;; json.lsp
 
 ; (define (json-parse-file file)
 ;   (or json2expr

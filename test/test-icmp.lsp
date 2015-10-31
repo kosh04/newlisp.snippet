@@ -8,7 +8,7 @@
 ;;(load "unittest.lsp")
 
 (println (Icmp:ping "localhost"))
-(println (Icmp:ping "newlisp.org"))
+(println (Icmp:ping "www.newlisp.org"))
 (println (Icmp:ping "google.com"))
 (println (Icmp:ping "yahoo.com"))
 (println (Icmp:ping "github.com"))

@@ -6,16 +6,12 @@ USAGE := $(MAKE) [test-all $(TESTS)]
 
 default: test-all
 
-define define-test
-$1: test/$1.lsp
-	$$(NEWLISP) -n $$^ -e "(Test:run)"
-endef
-
-$(foreach test, $(TESTS), $(eval $(call define-test,$(test))))
+test-%: test/test-%.lsp
+	$(NEWLISP) -n $^ -e "(Test:run)"
 
 test-all: $(TESTS)
 
 help usage:
 	@echo $(USAGE)
 
-.PHONY: test-all $(TESTS) help usage
+.PHONY: test-all test-% help usage

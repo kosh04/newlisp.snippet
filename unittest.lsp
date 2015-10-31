@@ -1,21 +1,25 @@
 ;;; unittest.lsp
 
-;; usage:
+;; @module arglist.lsp
+;; @description Simple Unit Testing Tool
+;; @version 0.2
+
+;; Example:
 
 ;; (load "unittest.lsp")
+;; (define (foo (x 0)) (* x x))
 ;; (define-test "foo"
-;;   (= (foo) 'result)
-;;   (integer? (foo 777)))
+;;   (= (foo 10) 100)
+;;   (= (foo) 0))
 ;; (Test:run)
 ;; -> run all test and exit
 
 
+(new Class 'Test)
 (new Tree 'TestPool)
 
 ;;
 (context 'Test)
-
-(define *test-name* nil)
 
 (define-macro (mkassoc)
   "make assoc list by symbols."
@@ -27,20 +31,31 @@
   "Returns its argument."
   obj)
 
-(define (Test:add name form (value nil) (pass nil))
-   (TestPool name (mkassoc name form value pass)))
+(setq @name 1
+      @form 2
+      @value 3
+      @pass  4
+      ;; @finished 5
+      )
 
-;; syntax: (define-test "name" test0...testN)
+(define (Test:Test name form (value nil) (pass nil))
+  (list (context) name form value pass))
+
+(define (Test:add name form (value nil) (pass nil))
+  (TestPool name (Test name form value pass)))
+
+;; @syntax (define-test test-name test0...testN)
 (define-macro (define-test name)
   (Test:add name (args) nil nil))
 
-(define (names)
-  (map first (TestPool)))
+(define (keys ctx)
+  (map first (ctx)))
 
 (define (passes)
   (map (lambda (name)
-         (lookup "pass" (TestPool name)))
-       (names)))
+         ((TestPool name) @pass))
+       (keys TestPool))
+  )
 
 (define (pass-all?)
   (for-all true? (passes)))
@@ -54,33 +69,31 @@
 (define (Test:log)
   (println (apply format (args))))
 
-(define (report-result result err form)
-  (Test:log "%s ... %s: %s"
+(define (report-result result test-naem err form)
+  (Test:log "%s ... %s: %s => %s"
             (if (and (nil? err) result) "pass" "FAIL")
-            (string *test-name*)
-            (string form))
+            (string test-name)
+            (string form)
+            (string result))
   (when err
-    (Test:log ">>> %s" result))
-  )
+    (Test:log ">>> %s" result)))
 
-(define (run-1 name)
-  (let ((*test-name* name)
-        (form (lookup "form" (TestPool name))))
-    (local (values pass)
-      (setf values (map (lambda (form)
-                          (local (value noerr)
-                            (setf noerr (catch (eval form) 'value))
-                            (report-result value (not noerr) form)
-                            (if noerr value nil)))
-                        form)
-            pass (for-all identity values))
-      (Test:add name form values pass)
-      ;;(Test:log "%s" (string (TestPool name)))
-      )))
+(define (run-1 test-name pool)
+  (local (values pass)
+    (setf values (map (lambda (expr)
+                        (local (val noerr)
+                          (setf noerr (catch (eval expr) 'val))
+                          (report-result val test-name (not noerr) expr)
+                          (if noerr val nil)))
+                      ((pool test-name) @form))
+          pass (for-all identity values))
+    (setf ((pool test-name) @value) values
+          ((pool test-name) @pass) pass)
+    ))
 
 (define (run)
   (dotree (t TestPool true)
-    (run-1 (lookup "name" (eval t))))
+    (run-1 ((eval t) @name) TestPool))
   (Test:log "---")
   (Test:log "Passed: %d" (pass-count))
   (Test:log "Failed: %d" (fail-count))
